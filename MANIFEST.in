@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include excela *.css
+recursive-include excela *.csv
+recursive-include excela *.html
+recursive-include excela *.ico
+recursive-include excela *.js
+recursive-include excela *.json
+recursive-include excela *.md
+recursive-include excela *.png
+recursive-include excela *.py
+recursive-include excela *.svg
+recursive-include excela *.txt
+recursive-exclude excela *.pyc
