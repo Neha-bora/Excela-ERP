@@ -108,9 +108,7 @@ doc_events = {
 	# 	"on_cancel": "method",
 	# 	"on_trash": "method"
 	# }
-    # "User":{
-    #     "validate":"excela.excela.hook.user.validate"
-    # }
+
 }
 
 # Scheduled Tasks

@@ -1,16 +1,32 @@
 import frappe
+from frappe.utils import validate_email_address
 
-# @frappe.whitelist(allow_guest=True)
-# def signup(user={}):
-#     try:
-#         res = frappe._dict()
-#         user = frappe.new_doc("User")
-#         user.first_name = user.get('first_name')
-#         user.last_name = user.get('last_name')
-#         user.email = user.get('email')
-#         user.save()
-#     except Exception as e:
-#         frappe.log_error(frappe.get_traceback(), e)
+@frappe.whitelist(allow_guest=True)
+def signup(email, pwd, full_name):
+    if validate_email_address(email):
+        try:
+            user_name=full_name.split(" ")
+            user_doc = frappe.get_doc({'doctype':'User',"first_name":user_name[0] if user_name else "",
+                "last_name":user_name[1] if len(user_name)>=2 else "", "email":email,
+                  "username":email,"send_welcome_email":0,"new_password":pwd,
+                  'roles':[{'role':'Customer'}]})
+            user_doc.insert(ignore_permissions=True)
+            customer_doc=frappe.get_doc({'doctype':'Customer',"first_name":user_doc.first_name,
+                                "last_name":user_doc.last_name,"customer_name":user_doc.full_name,
+                                "email_id1":user_doc.email,"customer_group":"Individual",
+                                "territory":"All Territories"
+                                })
+            customer_doc.insert(ignore_permissions=True)
+            # share_document(doctype="Customer",document=customer_doc.name,user=user_doc.name)
+            frappe.get_doc({'doctype':'User Permission','user':user_doc.name,
+                                        'allow':'Customer','for_value':customer_doc.name,'is_default':1,
+                                        'apply_to_all_doctypes':1}).insert(ignore_permissions=True)
+            login(email, pwd)
+        except Exception as e:
+            frappe.response["message"] = {
+                "success_key": 0,
+                "message": e
+                }
 
 @frappe.whitelist(allow_guest=True)
 def login(usr, pwd):
