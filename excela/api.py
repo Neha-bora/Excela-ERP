@@ -2,12 +2,12 @@ import frappe
 from frappe.utils import validate_email_address
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, pwd, full_name):
+def signup(email, pwd, full_name, user_category):
     if validate_email_address(email):
         try:
             user_name=full_name.split(" ")
             user_doc = frappe.get_doc({'doctype':'User',"first_name":user_name[0] if user_name else "",
-                "last_name":user_name[1] if len(user_name)>=2 else "", "email":email,
+        "last_name":user_name[1] if len(user_name)>=2 else "", "email":email, "user_category":user_category,
                   "username":email,"send_welcome_email":0,"new_password":pwd,
                   'roles':[{'role':'Customer'}]})
             user_doc.insert(ignore_permissions=True)
@@ -58,7 +58,8 @@ def login(usr, pwd):
         "first_name":user.first_name,
         "middle_name" : user.middle_name,
         "last_name" : user.last_name,
-        "full_name": user.full_name
+        "full_name": user.full_name,
+        "user_category":user.user_category
     }
 
 
