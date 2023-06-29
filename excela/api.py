@@ -2,14 +2,14 @@ import frappe
 from frappe.utils import validate_email_address
 
 @frappe.whitelist(allow_guest=True)
-def signup(email, pwd, full_name, user_category, phone , country):
+def signup(email, pwd, full_name, user_category, phone , country, phone_code):
     if validate_email_address(email):
         try:
             user_name=full_name.split(" ")
             user_doc = frappe.get_doc({'doctype':'User',"first_name":user_name[0] if user_name else "",
         "last_name":user_name[1] if len(user_name)>=2 else "", "email":email, "user_category":user_category,
-                  "username":email,"send_welcome_email":0,"new_password":pwd, "phone":phone , "location": country,
-                  'roles':[{'role':'Customer'}]})
+                  "username":email,"send_welcome_email":0,"new_password":pwd, "phone":phone , "location": country, 
+                  "phone_code":phone_code,'roles':[{'role':'Customer'}]})
             user_doc.insert(ignore_permissions=True)
             customer_doc=frappe.get_doc({'doctype':'Customer',"first_name":user_doc.first_name,
                                 "last_name":user_doc.last_name,"customer_name":user_doc.full_name,
@@ -111,3 +111,34 @@ def get_job_listing():
                 return res
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), e)
+
+@frappe.whitelist(allow_guest=True)
+def create_job_applicant(applicant_name={}):
+    try:
+        res = frappe._dict()
+        job_applicant = frappe.new_doc("Job Applicant")
+        job_applicant.job_title = applicant_name.get("job_id")
+        job_applicant.applicant_name = applicant_name.get("applicant_name")
+        job_applicant.email_id = applicant_name.get('email_id')
+        job_applicant.phone_number = applicant_name.get("phone_number")
+        job_applicant.country = applicant_name.get("country")
+        job_applicant.cover_letter = applicant_name.get("message")
+        job_applicant.save()
+
+        res['message'] = "success"
+        res["job_applicant"] = {
+            "name" : job_applicant.name,
+            "status":job_applicant.status
+        }
+        return res
+    except Exception as e:
+        job_applicant.log_error(frappe.get_traceback(), e)  
+
+# @frappe.whitelist(allow_guest=True)
+# def job_search():
+
+
+
+
+          
+     
