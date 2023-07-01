@@ -217,6 +217,32 @@ def get_job_details_by_id(job_id):
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), e)
         
-
-     
+@frappe.whitelist(allow_guest=True)
+def get_apply_job_by_userid(userid):
+    try:
+        res = frappe._dict()
+        applied_job_tab = frappe.qb.DocType('Job Applicant')
+        applied_job = (
+                frappe.qb.from_(applied_job_tab)
+                .select(
+                    applied_job_tab.name,
+                    applied_job_tab.email_id,
+                    applied_job_tab.applicant_name,
+                    applied_job_tab.job_title
+                    )
+                .where( (applied_job_tab.status == "Open") & (applied_job_tab.email_id == userid)
+                )
+                ).run(as_dict=1)
+        if applied_job:
+                res['success_key'] = 1
+                res['message'] = "success"
+                res['applied_job'] = applied_job
+                return res
+        else:
+                res["success_key"] = 0
+                res["message"] = "No Job list with this name"
+                res['applied_job']= applied_job
+                return res
+    except Exception as e :
+        frappe.log_error(frappe.get_traceback(), e)
  
