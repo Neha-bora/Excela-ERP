@@ -1,5 +1,6 @@
 import frappe
 from frappe.utils import validate_email_address
+import base64
 
 @frappe.whitelist(allow_guest=True)
 def signup(email, pwd, full_name, user_category, phone , country, country_code):
@@ -121,10 +122,12 @@ def get_job_listing():
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), e)
 
+import json
 @frappe.whitelist(allow_guest=True)
 def create_job_applicant(applicant_name={}):
     try:
         res = frappe._dict()
+        
         job_applicant = frappe.new_doc("Job Applicant")
         job_applicant.job_title = applicant_name.get("job_id")
         job_applicant.applicant_name = applicant_name.get("applicant_name")
@@ -132,7 +135,20 @@ def create_job_applicant(applicant_name={}):
         job_applicant.phone_number = applicant_name.get("phone_number")
         job_applicant.country = applicant_name.get("country")
         job_applicant.cover_letter = applicant_name.get("message")
-        job_applicant.save()
+        job_applicant.insert(ignore_permissions=True)
+
+        if applicant_name.get('documents'):
+            for attach in applicant_name.get('documents'):
+                 frappe.get_doc(
+			        {
+				        "doctype": "File",
+                        "attached_to_doctype": 'Job Applicant',
+                        "attached_to_name": job_applicant.name,
+                        "file_name": attach.get('f_name'),
+                        "is_private": 0,
+                        "content": base64.b64decode(attach.get('f_data').split(',')[1]),
+                    }).insert(ignore_permissions=True)
+             
 
         res['message'] = "success"
         res["job_applicant"] = {
@@ -141,7 +157,8 @@ def create_job_applicant(applicant_name={}):
         }
         return res
     except Exception as e:
-        job_applicant.log_error(frappe.get_traceback(), e)  
+        frappe.log_error(frappe.get_traceback(), e)
+        res['message'] = "failed" 
 
 @frappe.whitelist(allow_guest=True)
 def job_search(job_title=None, job_type=None, category= None):
@@ -149,15 +166,19 @@ def job_search(job_title=None, job_type=None, category= None):
     job_opening = frappe.qb.DocType('Job Opening')
     if job_title:
         query = """Select name,job_title , 
-            employment_type , 
-            job_sector
+                designation ,department , description ,
+                status , employment_type , job_sector ,
+                number_of_vacancies , years_of_experience , 
+                lower_range , upper_range
         from `tabJob Opening` 
         WHERE job_title LIKE %s"""
         params = ("%"+job_title+"%",)
     else:
         query = """Select name,job_title , 
-            employment_type , 
-            job_sector
+                designation ,department , description ,
+                status , employment_type , job_sector ,
+                number_of_vacancies , years_of_experience , 
+                lower_range , upper_range
         from `tabJob Opening` """
         params = ()
     if job_type:
@@ -167,7 +188,7 @@ def job_search(job_title=None, job_type=None, category= None):
     if category:
         query += "AND job_sector = %s"
         params += (category,)
-    job_opening = frappe.db.sql(query, params, as_dict=1)
+    job_opening = frappe.db.sql(query, params, as_dict=1, debug=True)
 
     if job_opening:
         res['success_key'] = 1
