@@ -13,10 +13,17 @@ def signup(email, pwd, full_name, user_category, phone, country, country_code):
                                        "username": email, "send_welcome_email": 0, "new_password": pwd, "phone": phone, "location": country,
                                        "country_code": country_code, 'roles': [{'role': 'Customer'}]})
             user_doc.insert(ignore_permissions=True)
-            customer_doc = frappe.get_doc({'doctype': 'Customer', "first_name": user_doc.first_name,
-                                           "last_name": user_doc.last_name, "customer_name": user_doc.full_name,
-                                           "email_id1": user_doc.email, "customer_group": "Individual",
-                                          "territory": "All Territories"
+            customer_doc = frappe.get_doc({'doctype': 'Customer', 
+                                            "first_name": user_doc.first_name,
+                                            "last_name": user_doc.last_name, 
+                                            "customer_name": user_doc.full_name,
+                                            "email_id1": user_doc.email, 
+                                            "customer_group": "Individual",
+                                            "territory": "All Territories",
+                                            "is_agent":1 if user_doc.user_category == "Agent" else 0,
+                                            "is_job_seeker": 1 if user_doc.user_category == "Job Seeker" else 0,
+                                            "is_student":1 if user_doc.user_category== "Student" else 0,
+                                            "is_client_company":1 if user_doc.user_category=="Client Company" else 0
                                            })
             customer_doc.insert(ignore_permissions=True)
             # share_document(doctype="Customer",document=customer_doc.name,user=user_doc.name)
@@ -137,6 +144,7 @@ def create_job_applicant(applicant_name={}):
         job_applicant.phone_number = applicant_name.get("phone_number")
         job_applicant.country = applicant_name.get("country")
         job_applicant.cover_letter = applicant_name.get("message")
+        job_applicant.passport_no = applicant_name.get("passport_no")
         job_applicant.insert(ignore_permissions=True)
 
         if applicant_name.get('documents'):
