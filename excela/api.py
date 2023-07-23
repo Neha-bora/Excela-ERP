@@ -249,7 +249,7 @@ def get_apply_job_by_userid(userid):
                 ja.phone_number,ja.passport_no,
                 ja.candidate_status , ja.creation  , ja.cover_letter
             from `tabJob Applicant` ja
-            where ja.status = "Open" and ja.email_id = %s
+            where ja.email_id = %s
         ''', (userid) , as_dict=True)
         for job in applied_job:
             job_details = frappe.db.sql(''' 
@@ -259,9 +259,9 @@ def get_apply_job_by_userid(userid):
                 jo.employment_type,jo.job_sector , jo.number_of_vacancies ,
                 jo.years_of_experience , jo.lower_range, jo.upper_range
             from `tabJob Applicant` ja , `tabJob Opening` jo
-            where jo.name = ja.job_title and jo.status = "Open" and ja.email_id = %s
+            where jo.name = ja.job_title and ja.email_id = %s
             ''',(userid) ,as_dict=True )
-        job['job_detail'] = job_details
+            job['job_detail'] = job_details
 
         if applied_job:
             res['success_key'] = 1
