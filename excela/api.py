@@ -247,21 +247,18 @@ def get_apply_job_by_userid(userid):
             select
                 ja.name , ja.email_id ,ja.applicant_name , ja.status , 
                 ja.phone_number,ja.passport_no,
-                ja.candidate_status , ja.creation  , ja.cover_letter
-            from `tabJob Applicant` ja
-            where ja.email_id = %s
-        ''', (userid) , as_dict=True)
-        for job in applied_job:
-            job_details = frappe.db.sql(''' 
-            select
+                ja.candidate_status , ja.creation  , ja.cover_letter,
+                
                 jo.name as job_id , jo.job_title,  
-                jo.designation , jo.department ,jo.description, jo.status , 
+                jo.designation , jo.department ,jo.description, 
                 jo.employment_type,jo.job_sector , jo.number_of_vacancies ,
                 jo.years_of_experience , jo.lower_range, jo.upper_range
-            from `tabJob Applicant` ja , `tabJob Opening` jo
-            where jo.name = ja.job_title and ja.email_id = %s
-            ''',(userid) ,as_dict=True )
-            job['job_detail'] = job_details
+            from 
+                `tabJob Applicant` ja left join `tabJob Opening` jo 
+            on jo.name = ja.job_title 
+                                    
+            where ja.email_id = %s 
+        ''',(userid), as_dict=True)
 
         if applied_job:
             res['success_key'] = 1
@@ -275,30 +272,3 @@ def get_apply_job_by_userid(userid):
             return res
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), e)
-
-# @frappe.whitelist(allow_guest=True)
-# def get_user_profile():
-#     res = frappe._dict()
-#     user = frappe.db.sql(''' 
-#             select
-#                 email , first_name , last_name , full_name , 
-#                 username , phone, location, country_code , user_category
-#             from `tabUser`
-#     ''' , as_dict=True)
-
-#     for job in user:
-#         applied_job = frappe.db.sql(''' 
-#         select ja.job_title from `tabJob Applicant` ja , `tabUser` u
-#         where ja.email_id = u.email
-#         ''' , as_dict=True)
-#         job['applied_job'] = applied_job
-#     if user:
-#         res["success_key"] = 1
-#         res["message"] = "success"
-#         res['user_details'] = user
-#         return res
-#     else:
-#         res["success_key"] = 0
-#         res["message"] = "No user found"
-#         res['user_details'] = user
-#         return res
