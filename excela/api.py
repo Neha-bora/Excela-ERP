@@ -239,22 +239,30 @@ def get_job_details_by_id(job_id):
         frappe.log_error(frappe.get_traceback(), e)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def get_apply_job_by_userid(userid):
     try:
         res = frappe._dict()
-        applied_job_tab = frappe.qb.DocType('Job Applicant')
-        applied_job = (
-            frappe.qb.from_(applied_job_tab)
-            .select(
-                applied_job_tab.name,
-                applied_job_tab.email_id,
-                applied_job_tab.applicant_name,
-                applied_job_tab.job_title
-            )
-            .where((applied_job_tab.status == "Open") & (applied_job_tab.email_id == userid)
-                   )
-        ).run(as_dict=1)
+        applied_job = frappe.db.sql(''' 
+            select
+                ja.name , ja.email_id ,ja.applicant_name , ja.status , 
+                ja.phone_number,ja.passport_no,
+                ja.candidate_status , ja.creation  , ja.cover_letter
+            from `tabJob Applicant` ja
+            where ja.status = "Open" and ja.email_id = %s
+        ''', (userid) , as_dict=True)
+        for job in applied_job:
+            job_details = frappe.db.sql(''' 
+            select
+                jo.name as job_id , jo.job_title,  
+                jo.designation , jo.department ,jo.description, jo.status , 
+                jo.employment_type,jo.job_sector , jo.number_of_vacancies ,
+                jo.years_of_experience , jo.lower_range, jo.upper_range
+            from `tabJob Applicant` ja , `tabJob Opening` jo
+            where jo.name = ja.job_title and jo.status = "Open" and ja.email_id = %s
+            ''',(userid) ,as_dict=True )
+        job['job_detail'] = job_details
+
         if applied_job:
             res['success_key'] = 1
             res['message'] = "success"
@@ -267,3 +275,30 @@ def get_apply_job_by_userid(userid):
             return res
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), e)
+
+# @frappe.whitelist(allow_guest=True)
+# def get_user_profile():
+#     res = frappe._dict()
+#     user = frappe.db.sql(''' 
+#             select
+#                 email , first_name , last_name , full_name , 
+#                 username , phone, location, country_code , user_category
+#             from `tabUser`
+#     ''' , as_dict=True)
+
+#     for job in user:
+#         applied_job = frappe.db.sql(''' 
+#         select ja.job_title from `tabJob Applicant` ja , `tabUser` u
+#         where ja.email_id = u.email
+#         ''' , as_dict=True)
+#         job['applied_job'] = applied_job
+#     if user:
+#         res["success_key"] = 1
+#         res["message"] = "success"
+#         res['user_details'] = user
+#         return res
+#     else:
+#         res["success_key"] = 0
+#         res["message"] = "No user found"
+#         res['user_details'] = user
+#         return res
