@@ -7,6 +7,28 @@ app_description = "excela"
 app_email = "info@example.com"
 app_license = "MIT"
 
+fixtures = [
+    {
+        "doctype": "Custom Field",
+        "filters": [
+            [
+                "name",
+                "in",
+                [ 
+					"Customer-user_id",
+                    "Customer-educations",
+                    "Customer-education",
+                    "Customer-company",
+                    "Customer-experience",
+                    "Customer-year_of_experience",
+                    "Customer-education_level",
+                    "Customer-bio",
+                    "Customer-about"            
+                ]
+            ]
+        ]
+    }
+]
 # Includes in <head>
 # ------------------
 
@@ -200,3 +222,4 @@ doc_events = {
 # auth_hooks = [
 #	"excela.auth.validate"
 # ]
+

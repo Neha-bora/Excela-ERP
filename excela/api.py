@@ -17,7 +17,7 @@ def signup(email, pwd, full_name, user_category, phone, country, country_code):
                                             "first_name": user_doc.first_name,
                                             "last_name": user_doc.last_name, 
                                             "customer_name": user_doc.full_name,
-                                            "email_id1": user_doc.email, 
+                                            "user_id": user_doc.email, 
                                             "customer_group": "Individual",
                                             "territory": "All Territories",
                                             "is_agent":1 if user_doc.user_category == "Agent" else 0,
@@ -272,3 +272,118 @@ def get_apply_job_by_userid(userid):
             return res
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), e)
+
+@frappe.whitelist()
+def get_documents():
+    res = frappe._dict()
+    user = frappe.session.user
+    customer_id = frappe.db.get_value("Customer", {'customer_name':frappe.db.get_value('User' , user , 'full_name')}, 'name')
+
+    documents = frappe.db.sql('''select file_url from `tabFile` where attached_to_doctype = "Customer" and attached_to_name = %s''',(customer_id) , as_dict=True)
+    if documents:
+        res['success_key'] = 1
+        res['message'] = "success"
+        res['documents'] = documents
+        return res
+    else:
+        res["success_key"] = 0
+        res["message"] = "No documents"
+        res['documents'] = documents
+        return res
+
+@frappe.whitelist()
+def upload_documents(documents=[]):
+    try:
+        res = frappe._dict()
+        customer = frappe.db.get_list("Customer")
+        for attach in documents:
+            frappe.get_doc(
+                {
+                    "doctype": "File",
+                                "attached_to_doctype": 'Customer',
+                                "attached_to_name": customer[0].name if customer else "",
+                                "file_name": attach.get('f_name'),
+                                "is_private": 0,
+                                "content": base64.b64decode(attach.get('f_data').split(',')[1]),
+                }).insert(ignore_permissions=True)
+            
+        res['message'] = "success"
+        res["documents"] = {
+            "doc":attach.get('f_name')
+            }
+        return res
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), e)
+        res['message'] = "failed"
+
+
+@frappe.whitelist()
+def create_user_profile(profile={}):
+    try:
+        res = frappe._dict()
+        customer_id = frappe.db.get_list("Customer")
+        customer = frappe.get_doc("Customer",customer_id[0].name)
+        customer.bio = profile.get('bio'),
+        customer.year_of_experience =  profile.get("year_of_experience")
+        
+        for exp in profile.get('experience'):
+            customer.append('company' ,{
+                'designation': exp.get('designation'),
+                'company' : exp.get('company')
+            })
+        
+        customer.education_level = profile.get('education_level')
+         
+        for edu in profile.get('education'):
+            customer.append('educations',{
+                "education": edu.get('education'),
+                "board":edu.get("board") , 
+                "passing_year": edu.get('passing_year')  ,
+                "marks":edu.get('marks')
+
+            })
+        customer.save(ignore_permissions=True)
+
+        res['message'] = "success",
+        res['user_profile']= "Updated"
+
+        return res
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), e)
+        res['message']= 'failed'
+
+@frappe.whitelist()
+def get_user_profile(userid):
+    res = frappe._dict()
+    user_profile = frappe.db.sql('''
+                    select bio , year_of_experience  , education_level from `tabCustomer` 
+                    where user_id = %s''',(userid) , as_dict=True)
+    
+    for exp in user_profile:
+        user_exp = frappe.db.sql(''' 
+        select designation , company 
+        from `tabUser Experience` ue , `tabCustomer` c 
+        where c.name = ue.parent and c.user_id = %s
+        ''',(userid), as_dict=True )
+
+        exp['user_experience'] = user_exp
+
+    for edu in user_profile:
+        user_edu = frappe.db.sql(''' 
+        select education , board , passing_year , marks
+        from `tabUser Education` ue , `tabCustomer` c 
+        where c.name = ue.parent and c.user_id = %s
+        ''',(userid), as_dict=True )
+        
+        edu['user_education'] = user_edu
+
+    if user_profile:
+        res['success_key'] = 1
+        res['message'] = "success"
+        res['user_profile'] = user_profile
+        return res
+    else:
+        res["success_key"] = 0
+        res["message"] = "No Data"
+        res['user_profile'] = user_profile
+        return res
