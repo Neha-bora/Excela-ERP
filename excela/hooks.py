@@ -27,6 +27,20 @@ fixtures = [
                 ]
             ]
         ]
+    },
+        {
+        "doctype": "Notification",
+        "filters": [
+            [
+                "name",
+                "in",
+                [ 
+					"When candidate apply from Website directly",    
+                    "After Accepting the Job application",
+                    "After Rejecting the Job application"       
+                ]
+            ]
+        ]
     }
 ]
 # Includes in <head>
